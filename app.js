@@ -6,11 +6,13 @@ const dotenv = require('dotenv');
 const session = require('express-session');
 const passport = require('./config/passport-config'); // Import the Passport configuration
 const { hashPassword } = require('./config/bcrypt-config'); 
-
+const { check, validationResult } = require('express-validator');
 /**
  * Load environment variables from .env file, where API keys and passwords are configured.
  */
 dotenv.config({ path: '.env' });
+//body-parser
+app.use(bodyParser.json());
 
 // port 
 app.set('port', process.env.PORT);
@@ -24,12 +26,39 @@ app.use(express.static(__dirname + '/public'));
 // set the view engine to ejs
 app.set('view engine', 'ejs');
 
+//passport and sessions
+
+app.use(
+  session({
+    secret: 'your-secret-key', // Change this to a strong, unique secret key
+    resave: false,
+    saveUninitialized: false,
+  })
+);
+
+app.use(passport.initialize());
+app.use(passport.session());
+
 //controlles
 
 const testController = require('./controllers/testController');
+const userController = require('./controllers/userController');
 
 //routes
-app.get('/', testController.index)
+app.get('/', testController.index);
+
+app.post('/register',
+[
+    check('username')
+      .isLength({ min: 3 })
+      .withMessage('Username must be at least 3 characters long'),
+    check('password')
+      .isLength({ min: 6 })
+      .withMessage('Password must be at least 6 characters long'),
+    check('email')
+      .isEmail()
+      .withMessage('Invalid email address'),
+  ], userController.postRegister);
 
 
 /**
