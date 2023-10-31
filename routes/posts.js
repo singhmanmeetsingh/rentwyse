@@ -12,12 +12,12 @@ router.post("", checkAuth, extractFile, PostController.newPost);
 router.get("", checkAuth, PostController.listPost);
 
 // // Fetching post by Id
-// router.get("/:id", PostController.listPostById);
+router.get("/:id", PostController.listPostById);
 
 // //Editing Post
-// router.put("/:id", checkAuth, extractFile, PostController.editPost);
+router.put("/:id", checkAuth, extractFile, PostController.editPost);
 
 // //Deleting Post
-// router.delete("/:_id", checkAuth, PostController.deletePost);
+router.delete("/:_id", checkAuth, PostController.deletePost);
 
 module.exports = router;

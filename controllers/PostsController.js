@@ -75,3 +75,70 @@ exports.listPost = (req, res, next) => {
       res.status(500).json({ message: "Fetching posts failed !!" });
     });
 };
+
+exports.listPostById = (req, res, next) => {
+  Post.findById(req.params.id)
+    .then((post) => {
+      console.log(req.params.id);
+      if (post) {
+        res.status(200).json(post);
+      } else {
+        res.status(404).json({ message: "Post not Found" });
+      }
+    })
+    .catch((error) => {
+      console.error("Error during the search operation:", error);
+      res.status(500).json({ message: "Fetching Post failed" });
+    });
+};
+
+exports.editPost = (req, res, next) => {
+  const postId = req.params.id;
+  let imagePath = req.body.imagePath;
+  const url = req.protocol + "://" + req.get("host");
+  imagePath = req.files.map((file) => url + "/images/" + file.filename);
+  const post = new Post({
+    _id: req.body.id,
+    title: req.body.title,
+    content: req.body.content,
+    imagePath: imagePath,
+    city: req.body.city,
+    address: req.body.address,
+    province: req.body.province,
+    zipcode: req.body.zipcode,
+    country: req.body.country,
+  });
+  console.log(post, req.userData.creator);
+
+  Post.updateOne({ _id: req.params.id, creator: req.userData.userId }, post)
+    .then((result) => {
+      console.log("Update result = ");
+      console.log(result);
+      if (result.modifiedCount > 0) {
+        res.status(200).json({ message: "Update Successful!" });
+      } else {
+        res.status(401).json({ message: "Not Authorized!" });
+      }
+    })
+    .catch((error) => {
+      console.error("Error during the update operation:", error);
+      res.status(500).json({ message: "Update Failed!" });
+    });
+};
+
+exports.deletePost = (req, res, next) => {
+  console.log(req.params._id);
+  Post.deleteOne({ _id: req.params._id, creator: req.userData.userId })
+    .then((result) => {
+      console.log(result);
+      if (result.deletedCount > 0) {
+        res.status(200).json({ message: "Delete Successful!" });
+      } else {
+        res.status(401).json({ message: "Not Authorized!" });
+      }
+    })
+    .catch((error) => {
+      console.error("Error during the Delete operation:", error);
+      res.status(500).json({ message: "Delete Failed!" });
+    });
+};
