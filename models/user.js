@@ -1,4 +1,7 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
+const uniqueValidator = require("mongoose-unique-validator");
+
+// we would need the unique validator package if we are to run the unique verification
 
 const userSchema = new mongoose.Schema({
   username: {
@@ -21,4 +24,6 @@ const userSchema = new mongoose.Schema({
   phone: String,
 });
 
-module.exports = mongoose.model('User', userSchema);
+userSchema.plugin(uniqueValidator); // so this is how we run the check on the username and email to make sure its unique
+
+module.exports = mongoose.model("User", userSchema);

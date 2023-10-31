@@ -1,4 +1,4 @@
-const bcrypt = require('bcrypt');
+const bcrypt = require("bcrypt");
 
 function hashPassword(password, callback) {
   bcrypt.hash(password, 10, (err, hashedPassword) => {
@@ -7,4 +7,8 @@ function hashPassword(password, callback) {
   });
 }
 
-module.exports = { hashPassword };
+function comparePasswords(plainPassword, hashedPassword, callback) {
+  bcrypt.compare(plainPassword, hashedPassword, callback);
+}
+
+module.exports = { hashPassword, comparePasswords };

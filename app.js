@@ -1,78 +1,64 @@
-const express = require('express');
-const bodyParser = require('body-parser');
+/**
+ * Over here we have our app
+ */
+
+const express = require("express");
+const bodyParser = require("body-parser");
 const app = express();
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-const session = require('express-session');
-const passport = require('./config/passport-config'); // Import the Passport configuration
-const { hashPassword } = require('./config/bcrypt-config'); 
-const { check, validationResult } = require('express-validator');
+const mongoose = require("mongoose");
+const dotenv = require("dotenv");
+const { hashPassword } = require("./config/bcrypt-config");
+const userRoutes = require("./routes/user");
+const postsRoutes = require("./routes/posts");
+const path = require("path");
+
 /**
  * Load environment variables from .env file, where API keys and passwords are configured.
  */
-dotenv.config({ path: '.env' });
-//body-parser
-app.use(bodyParser.json());
-
-// port 
-app.set('port', process.env.PORT);
-
-// Middleware to parse form data
-app.use(bodyParser.urlencoded({ extended: false }));
-
-// path for all the css imports
-app.use(express.static(__dirname + '/public'));
-
-// set the view engine to ejs
-app.set('view engine', 'ejs');
-
-//passport and sessions
-
-app.use(
-  session({
-    secret: 'your-secret-key', // Change this to a strong, unique secret key
-    resave: false,
-    saveUninitialized: false,
-  })
-);
-
-app.use(passport.initialize());
-app.use(passport.session());
-
-//controlles
-
-const testController = require('./controllers/testController');
-const userController = require('./controllers/userController');
-
-//routes
-app.get('/', testController.index);
-
-app.post('/register',
-[
-    check('username')
-      .isLength({ min: 3 })
-      .withMessage('Username must be at least 3 characters long'),
-    check('password')
-      .isLength({ min: 6 })
-      .withMessage('Password must be at least 6 characters long'),
-    check('email')
-      .isEmail()
-      .withMessage('Invalid email address'),
-  ], userController.postRegister);
-
+dotenv.config({ path: ".env" });
 
 /**
  * Connect to MongoDB.
 //  */
-mongoose.connect(process.env.MONGODB_URI);
-mongoose.connection.on('error', (err) => {
-  console.error(err);
-  console.log('%s MongoDB connection error. Please make sure MongoDB is running.');
-  process.exit();
+mongoose
+  .connect(process.env.MONGODB_URI)
+  .then(() => {
+    console.log("connected to the database...");
+  })
+  .catch(() => {
+    console.log("connection failed.");
+  });
+
+//body-parser
+app.use(bodyParser.json());
+
+// Middleware to parse form data
+app.use(bodyParser.urlencoded({ extended: false }));
+
+//allowing api call to our image folder
+app.use("/images", express.static(path.join("images")));
+
+// Setting up headers for CORES
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+  );
+
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PATCH, DELETE, OPTIONS, PUT"
+  );
+
+  next();
 });
 
+//passport and sessions (no longer needed has we would be using jwt)
 
-app.listen(app.get('port'), () => {
-  console.log(`App is running on http://localhost:${app.get('port')} in ${app.get('env')} mode`);
-  console.log('Press CTRL-C to stop');
-});
+//routes
+app.use("/api/user", userRoutes);
+app.use("/api/posts", postsRoutes);
+
+// Exporting this app file
+module.exports = app;
