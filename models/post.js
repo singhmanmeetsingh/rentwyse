@@ -11,6 +11,7 @@ const postSchema = mongoose.Schema({
   province: { type: String },
   zipcode: { type: Number },
   country: { type: String },
+  roomType: { type: String },
 });
 
 module.exports = mongoose.model("Post", postSchema);

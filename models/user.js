@@ -6,22 +6,36 @@ const uniqueValidator = require("mongoose-unique-validator");
 const userSchema = new mongoose.Schema({
   username: {
     type: String,
-    unique: true, // Ensure uniqueness of the 'username' field
-    required: true, // Make 'username' a required field
+    unique: true,
+    required: true,
   },
   password: {
     type: String,
-    required: true, // Make 'password' a required field
+    required: true,
   },
   email: {
     type: String,
-    unique: true, // Ensure uniqueness of the 'email' field
-    required: true, // Make 'email' a required field
+    unique: true,
+    required: true,
   },
-  firstName: String,
-  lastName: String,
-  address: String,
-  phone: String,
+  firstName: {
+    type: String,
+    required: true,
+  },
+  lastName: {
+    type: String,
+    required: true,
+  },
+  address: {
+    type: String,
+    required: true,
+  },
+  phone: {
+    type: String,
+    required: true,
+  },
+  emailToken: { type: String },
+  isEmailVerified: { type: Boolean, default: false },
 });
 
 userSchema.plugin(uniqueValidator); // so this is how we run the check on the username and email to make sure its unique

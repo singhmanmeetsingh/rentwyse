@@ -3,6 +3,8 @@ const bcrypt = require("bcrypt");
 const { hashPassword } = require("../config/bcrypt-config");
 const dotenv = require("dotenv");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+const emailService = require("../Services/emailService");
 
 dotenv.config({ path: ".env" });
 
@@ -17,6 +19,7 @@ exports.createUser = async (req, res, next) => {
       console.error(err);
       return res.status(500).json({ message: "Registration failed" });
     }
+    const verificationToken = crypto.randomBytes(32).toString("hex");
     const newUser = new User({
       username,
       password: hashedPassword,
@@ -25,8 +28,10 @@ exports.createUser = async (req, res, next) => {
       lastName,
       address,
       phone,
+      emailToken: verificationToken,
+      isEmailVerified: false,
     });
-
+    await emailService.sendVerificationEmail(newUser.email, verificationToken);
     await newUser
       .save()
       .then((result) => {
@@ -42,21 +47,98 @@ exports.createUser = async (req, res, next) => {
   });
 };
 
+exports.verifyEmail = async (req, res) => {
+  try {
+    const user = await User.findOne({ emailToken: req.query.token });
+    if (!user) {
+      // Token not found or invalid token
+      return res.status(400).send("This link is invalid or has expired.");
+    }
+
+    if (user.isEmailVerified) {
+      // User has already verified their email
+      return res
+        .status(400)
+        .send("This email has already been verified. You can now login.");
+    }
+
+    // Set the email as verified
+    user.emailToken = null;
+    user.isEmailVerified = true;
+    await user.save();
+
+    // Optional: Send a confirmation email here using your emailService
+
+    // Redirect the user to the login page or a confirmation page
+    res.status(200).send("email verification succesfull");
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .send(
+        "An error occurred during the verification process. Please try again later."
+      );
+  }
+};
+
+exports.getUserDetails = async (req, res, next) => {
+  const userId = req.params.id;
+  console.log("getUser hit...");
+  try {
+    const user = await User.findById(userId, "-password -emailToken"); // Exclude sensitive information
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json({ user: user });
+  } catch (error) {
+    res.status(500).json({ message: "Fetching user failed", error: error });
+  }
+};
+
+exports.updateUser = async (req, res, next) => {
+  const { firstName, lastName, address, phone } = req.body;
+  const userId = req.params.id;
+  console.log("update user");
+  try {
+    // Only update non-sensitive fields
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // the email cannot be updated without re-verification
+    user.firstName = firstName;
+    user.lastName = lastName;
+    user.address = address;
+    user.phone = phone;
+
+    const result = await user.save();
+    res.status(200).json({ message: "User updated", });
+  } catch (error) {
+    res.status(500).json({ message: "Could not update user", error: error });
+  }
+};
+
 exports.userLogin = async (req, res, next) => {
-  let fetchedUser;
-  await User.findOne({ username: req.body.username })
+  User.findOne({ username: req.body.username })
     .then((user) => {
       if (!user) {
-        throw new Error("User not found"); // <- throw an error if no user is found
+        res.status(401).json({ message: "User not found" });
+        return Promise.reject(); // Prevent further execution
+      }
+      if (!user.isEmailVerified) {
+        res.status(401).json({ message: "Auth failed: Email not verified" });
+        return Promise.reject();
       }
       fetchedUser = user;
       console.log("bcrypt compare " + req.body.password, user.password);
       return bcrypt.compare(req.body.password, user.password);
     })
     .then((result) => {
-      console.log(result);
       if (!result) {
-        throw new Error("Password mismatch"); // <- throw an error if passwords don't match
+        res.status(401).json({ message: "Password mismatch" });
+        return Promise.reject();
       }
       const token = jwt.sign(
         { username: fetchedUser.username, userId: fetchedUser._id },
@@ -70,7 +152,10 @@ exports.userLogin = async (req, res, next) => {
       });
     })
     .catch((err) => {
-      // One single response for any error, so no chance of multiple responses
-      res.status(401).json({ message: "Invalid authentication credentials" });
+      if (!res.headersSent) {
+        // This will be true only if no `.json()` was called before.
+        // Send a generic error message if none of the specific errors were triggered.
+        res.status(401).json({ message: "Invalid authentication credentials" });
+      }
     });
 };
