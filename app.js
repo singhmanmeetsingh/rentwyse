@@ -11,6 +11,7 @@ const { hashPassword } = require("./config/bcrypt-config");
 const userRoutes = require("./routes/user");
 const postsRoutes = require("./routes/posts");
 const path = require("path");
+const kycRoutes = require("./routes/kyc");
 
 /**
  * Load environment variables from .env file, where API keys and passwords are configured.
@@ -59,6 +60,6 @@ app.use((req, res, next) => {
 //routes
 app.use("/api/user", userRoutes);
 app.use("/api/posts", postsRoutes);
-
+app.use("/api/kyc", kycRoutes);
 // Exporting this app file
 module.exports = app;
