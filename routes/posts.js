@@ -11,8 +11,11 @@ router.post("", checkAuth, extractFile, PostController.newPost);
 //fetching all Posts
 router.get("", checkAuth, PostController.listPost);
 
-// // Fetching post by Id
+// // Fetching post by post Id
 router.get("/:id", PostController.listPostById);
+
+// // Fetching post by user Id
+router.get("/user-post/:userId", checkAuth,PostController.listPostByUserId);
 
 // //Editing Post
 router.put("/:id", checkAuth, extractFile, PostController.editPost);

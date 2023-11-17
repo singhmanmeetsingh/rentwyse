@@ -12,6 +12,9 @@ router.get("/verify-email", UserController.verifyEmail);
 
 router.get("/getUserDetails/:id",checkAuth ,UserController.getUserDetails);
 
-router.put("/updateUser/:id", UserController.updateUser);
+router.put("/updateUser/:id",checkAuth ,UserController.updateUser);
+
+router.put("/updatePassword/:id",checkAuth ,UserController.changePassword);
+
 
 module.exports = router;
