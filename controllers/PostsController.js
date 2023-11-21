@@ -106,7 +106,7 @@ exports.listPostByUserId = (req, res, next) => {
     return res.status(400).json({ message: "Invalid user ID" });
   }
 
-  const postQuery = Post.find({ creator: userId }); // Filter posts by user ID
+  const postQuery = Post.find({ creator: userId }); // Filtering the  posts by user ID
   let fetchedPosts;
 
   if (pageSize && currentPage) {
