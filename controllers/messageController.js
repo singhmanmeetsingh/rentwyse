@@ -54,27 +54,27 @@ exports.createMessage = async (req, res) => {
     console.log("sender username = " + senderUsername);
 
     if (receiverSocketId) {
-        // User is online, emit the message right away
-        console.log('we got here')
-        const io = socket.getIO();
-        io.to(receiverSocketId).emit("newMessage", {
-          conversationId: conversation._id,
-          message: content,
-          sender: sender,
-          receiver: receiver,
-          senderUsername: senderUsername,
-        });
-      } else {
-        // User is offline, queue the message
-        console.log('Queueing message for offline user');
-        socket.addQueuedMessage(receiver, {
-          conversationId: conversation._id,
-          message: content,
-          sender: sender,
-          receiver: receiver,
-          senderUsername: senderUsername,
-        });
-      }
+      // User is online, emit the message right away
+      console.log("we got here");
+      const io = socket.getIO();
+      io.to(receiverSocketId).emit("newMessage", {
+        conversationId: conversation._id,
+        message: content,
+        sender: sender,
+        receiver: receiver,
+        senderUsername: senderUsername,
+      });
+    } else {
+      // User is offline, queue the message
+      console.log("Queueing message for offline user");
+      socket.addQueuedMessage(receiver, {
+        conversationId: conversation._id,
+        message: content,
+        sender: sender,
+        receiver: receiver,
+        senderUsername: senderUsername,
+      });
+    }
     res
       .status(201)
       .json({ message: "Message sent successfully", messageId: message._id });
@@ -89,39 +89,46 @@ exports.getMessagesForUser = async (req, res) => {
   // Implement logic to get all messages for a user
 };
 
-  
-
 // Endpoint to mark messages as read
 exports.readMessagesInConversation = async (req, res) => {
-    try {
-      const { conversationId } = req.params;
-      const userId = req.userData.userId;
-  
-      const result = await Message.updateMany(
-        { conversationId: conversationId, receiver: userId, read: false },
-        { $set: { read: true } }
-      );
-  
-      // Send 204 No Content if successful since no content is returned
-      if (result.nModified > 0) {
-        res.status(204).send();
-      } else {
-        // No messages were updated, possibly because they were already marked as read
-        res.status(200).json({ message: "No messages to update" });
-      }
-    } catch (error) {
-      res.status(500).json({ message: "Failed to update messages", error: error.message });
+  try {
+    const { conversationId } = req.params;
+    const userId = req.userData.userId;
+    console.log("a user read a message");
+    const result = await Message.updateMany(
+      { conversationId: conversationId, receiver: userId, read: false },
+      { $set: { read: true } }
+    );
+
+    // Send 204 No Content if successful since no content is returned
+    if (result.nModified > 0) {
+      res.status(204).send();
+    } else {
+      // No messages were updated, possibly because they were already marked as read
+      res.status(200).json({ message: "No messages to update" });
     }
-  };
-  
-  
-  exports.getUnreadMessagesCount = async (req, res) => {
-    try {
-      const userId = req.userData.userId;
-      const count = await Message.countDocuments({ receiver: userId, read: false });
-      console.log(count)
-      res.json({ count });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to get unread messages count", error: error.message });
-    }
-  };
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Failed to update messages", error: error.message });
+  }
+};
+
+exports.getUnreadMessagesCount = async (req, res) => {
+  try {
+    const userId = req.userData.userId;
+    const count = await Message.countDocuments({
+      receiver: userId,
+      read: false,
+    });
+    console.log(count);
+    res.json({ count });
+  } catch (error) {
+    res
+      .status(500)
+      .json({
+        message: "Failed to get unread messages count",
+        error: error.message,
+      });
+  }
+};
