@@ -11,6 +11,9 @@ router.post("", checkAuth, extractFile, PostController.newPost);
 //fetching all Posts
 router.get("", checkAuth, PostController.listPost);
 
+     // example
+     // http://localhost:3000/api/search-posts?city=Waterloo
+     //http://localhost:3000/api/search-posts?bedroom=2&furnished=true&price=1000
 //search-post
 router.get('/search-posts', checkAuth, PostController.listPostSearch);
 

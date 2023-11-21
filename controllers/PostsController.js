@@ -220,15 +220,11 @@ exports.deletePost = (req, res, next) => {
 };
 
 exports.listPostSearch = async(req, res, next) => {
-  console.log("search req", req)
   try {
     const { city, bedroom, bathroom, furnished, parkingAvailable, price } = req.query;
 
      const query = {};
 
-     // example
-     // http://localhost:3000/api/search?city=Waterloo
-     //http://localhost:3000/api/search?bedroom=2&furnished=true&price=1000
      // if (city) query.city = city;
      //below code is for the search string case-insensitive
     if (city) query.city = { $regex: new RegExp(city, 'i') };
@@ -238,7 +234,6 @@ exports.listPostSearch = async(req, res, next) => {
     if (parkingAvailable) query.parkingAvailable = parkingAvailable === 'true';
     if (price) query.price = { $lte: parseInt(price) };
 
-    console.log("query", query);
     const results = await  Post.find(query);
     res.status(200).json(results);
   }catch (error) {
