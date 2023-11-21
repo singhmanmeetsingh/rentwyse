@@ -5,6 +5,10 @@
 const http = require("http");
 const app = require("./app");
 const debug = require("debug")("Rent-Wyse");
+
+const socket = require("./socket");
+
+
 // normalizing the port
 const normalizePort = (val) => {
   var port = parseInt(val, 10);
@@ -51,6 +55,7 @@ const port = normalizePort(process.env.PORT || "5500");
 app.set("port", port);
 
 const server = http.createServer(app);
+socket.init(server);
 server.on("error", onError);
 server.on("listening", onListening);
 server.listen(port);

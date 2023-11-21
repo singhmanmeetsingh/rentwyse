@@ -14,8 +14,8 @@ function extractBearerToken(inputStr) {
 
 module.exports = (req, res, next) => {
   try {
-    console.log("=====Check-Auth-Middle-Ware=====");
-    console.log("split 1 " + extractBearerToken(req.headers.authorization));
+    //console.log("=====Check-Auth-Middle-Ware=====");
+   // console.log("split 1 " + extractBearerToken(req.headers.authorization));
 
     const token = extractBearerToken(req.headers.authorization);
 

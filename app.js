@@ -12,7 +12,8 @@ const userRoutes = require("./routes/user");
 const postsRoutes = require("./routes/posts");
 const path = require("path");
 const kycRoutes = require("./routes/kyc");
-
+const messageRoutes = require("./routes/messages");
+const conversationRoutes = require("./routes/conversations");
 /**
  * Load environment variables from .env file, where API keys and passwords are configured.
  */
@@ -56,10 +57,12 @@ app.use((req, res, next) => {
 });
 
 //passport and sessions (no longer needed has we would be using jwt)
-
 //routes
 app.use("/api/user", userRoutes);
 app.use("/api/posts", postsRoutes);
 app.use("/api/kyc", kycRoutes);
+app.use("/api/messages", messageRoutes);
+app.use("/api/conversations", conversationRoutes);
+
 // Exporting this app file
 module.exports = app;
