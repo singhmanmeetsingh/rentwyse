@@ -30,4 +30,14 @@ router.post(
   ConversationController.uploadAgreementDocument
 );
 
+
+// View Document
+router.get('/documents/:filename', checkAuth, ConversationController.viewDocument);
+
+
+// Delete Document
+router.delete('/:conversationId/delete-document/:filename', checkAuth, ConversationController.deleteDocument);
+
+
+
 module.exports = router;

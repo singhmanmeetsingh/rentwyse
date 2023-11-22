@@ -10,20 +10,19 @@ const DOC_MIME_TYPE_MAP = {
 // Storage configuration for documents
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const isValid = MIME_TYPE_MAP[file.mimetype];
-    let error = new Error("Invalid document type");
-    if (isValid) {
-      error = null;
-    }
-    cb(null, "documents");
-  },
-  filename: (req, file, cb) => {
-    console.log("multer is executing some files");
-    const name = file.originalname.toLocaleLowerCase().split("").join("-");
-    const ext = DOC_MIME_TYPE_MAP[file.mimetype];
-    cb(null, name + "-" + Date.now() + "." + ext);
-  },
-});
+    destination: (req, file, cb) => {
+      const isValid = DOC_MIME_TYPE_MAP[file.mimetype];
+      let error = new Error("Invalid document type");
+      if (isValid) {
+        error = null;
+      }
+      cb(error, "documents"); // Save to 'documents' folder
+    },
+    filename: (req, file, cb) => {
+      const name = file.originalname.toLowerCase();
+      const ext = DOC_MIME_TYPE_MAP[file.mimetype];
+      cb(null, name + "-" + Date.now() + "." + ext); // Save only the file name with an extension
+    },
+  });
 
-module.exports = multer({ storage: storage }).array("document");
+module.exports = multer({ storage: storage }).array("documents");

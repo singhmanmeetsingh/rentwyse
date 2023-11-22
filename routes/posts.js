@@ -11,11 +11,11 @@ router.post("", checkAuth, extractFile, PostController.newPost);
 //fetching all Posts
 router.get("", checkAuth, PostController.listPost);
 
-     // example
-     // http://localhost:3000/api/search-posts?city=Waterloo
-     //http://localhost:3000/api/search-posts?bedroom=2&furnished=true&price=1000
+// example
+// http://localhost:3000/api/search-posts?city=Waterloo
+//http://localhost:3000/api/search-posts?bedroom=2&furnished=true&price=1000
 //search-post
-router.get('/search-posts', checkAuth, PostController.listPostSearch);
+router.get("/search-posts", PostController.listPostSearch);
 
 // // Fetching post by post Id
 router.get("/:id", PostController.listPostById);

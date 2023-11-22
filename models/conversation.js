@@ -13,11 +13,13 @@ const conversationSchema = mongoose.Schema({
     ref: "Post",
     required: true,
   },
-  viewingDate: { type: Date},
-  agreementDocument: {
-    type: String, // URL or path to the document
-    required: false,
-  },
+  viewingDate: { type: Date },
+  agreementDocuments: [
+    {
+      type: String, // URL or path to the document
+      required: false,
+    },
+  ],
   renegotiatedPrice: {
     type: Number,
     required: false,
@@ -26,10 +28,12 @@ const conversationSchema = mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  signedAgreementDocument: {
-    type: String, // URL or path to the signed document
-    required: false,
-  },
+  signedAgreementDocuments: [
+    {
+      type: String, // URL or path to the signed document
+      required: false,
+    },
+  ],
 });
 
 module.exports = mongoose.model("Conversation", conversationSchema);

@@ -1,6 +1,9 @@
 const Conversation = require("../models/conversation");
 const Message = require("../models/message");
-const Post = require("../models/post")
+const Post = require("../models/post");
+const fs = require("fs");
+const path = require("path");
+
 exports.startOrGetConversation = async (req, res) => {
   try {
     const { userId } = req.userData; // Sender, authenticated user
@@ -82,7 +85,7 @@ exports.getAllConversationsForUser = async (req, res) => {
         ...conversation.toObject(),
         lastMessage,
         unreadCount, // Including the unread messages count here
-        viewingDate: conversation.viewingDate ? conversation.viewingDate : null // Include viewingDate here
+        viewingDate: conversation.viewingDate ? conversation.viewingDate : null, // Include viewingDate here
       });
     }
 
@@ -122,7 +125,7 @@ exports.setViewingDate = async (req, res) => {
     res.status(200).json({
       message: "Viewing date set successfully",
       viewingDate: conversation.viewingDate,
-      conversation: conversation
+      conversation: conversation,
     });
   } catch (error) {
     console.error("Error in setViewingDate:", error);
@@ -132,29 +135,91 @@ exports.setViewingDate = async (req, res) => {
   }
 };
 
-
-
 //Document Upload
 exports.uploadAgreementDocument = async (req, res) => {
   const conversationId = req.params.conversationId;
-  const documentPath = req.file.path; // Path where the document is saved should be passed by multer middle ware on the route
+  const documents = req.files; // This will be an array of files
 
+  try {
+    const conversation = await Conversation.findById(conversationId).populate(
+      "postId"
+    );
+    if (!conversation) {
+      return res.status(404).json({ message: "Conversation not found" });
+    }
+
+    // Process each uploaded document
+    documents.forEach((doc) => {
+      // Extract only the filename from the path
+      const filename = doc.filename;
+
+      // Check if the authenticated user is the post creator
+      if (req.userData.userId === conversation.postId.creator.toString()) {
+        // Post creator is uploading the agreement document
+        conversation.agreementDocuments.push(filename);
+      } else {
+        // Other participant is uploading the signed agreement document
+        conversation.signedAgreementDocuments.push(filename);
+        conversation.agreementSigned = true; // Mark as signed
+      }
+    });
+
+    await conversation.save();
+
+    res.status(200).json({
+      message: "Document uploaded successfully",
+      documentPaths: documents.map((doc) => doc.filename), // Send back only filenames
+      agreementSigned: conversation.agreementSigned,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Failed to upload document", error: error.message });
+  }
+};
+
+exports.viewDocument = (req, res) => {
+  const filename = req.params.filename;
+  const filepath = path.join(__dirname, "..", "documents", filename);
+
+  if (fs.existsSync(filepath)) {
+    res.sendFile(filepath);
+  } else {
+    res.status(404).send("File not found");
+  }
+};
+
+exports.deleteDocument = async (req, res) => {
+  const { conversationId, filename } = req.params;
   try {
     const conversation = await Conversation.findById(conversationId);
     if (!conversation) {
       return res.status(404).json({ message: "Conversation not found" });
     }
 
-    
+    // Checking if the document is in agreementDocuments and remove it
+    const agreementDocIndex = conversation.agreementDocuments.indexOf(filename);
+    if (agreementDocIndex !== -1) {
+      conversation.agreementDocuments.splice(agreementDocIndex, 1);
+    }
 
-    conversation.agreementDocument = documentPath;
+    // Checking if the document is in signedAgreementDocuments and remove it
+    const signedAgreementDocIndex =
+      conversation.signedAgreementDocuments.indexOf(filename);
+    if (signedAgreementDocIndex !== -1) {
+      conversation.signedAgreementDocuments.splice(signedAgreementDocIndex, 1);
+    }
+
     await conversation.save();
 
-    res.status(200).json({
-      message: "Document uploaded successfully",
-      documentPath: documentPath
-    });
+    // Deleting the file from the server
+    const filepath = path.join(__dirname, "..", "documents", filename);
+    if (fs.existsSync(filepath)) {
+      fs.unlinkSync(filepath);
+    }
+
+    res.status(200).json({ message: "Document deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Failed to upload document" });
+    res.status(500).json({ message: "Failed to delete document", error });
   }
 };
