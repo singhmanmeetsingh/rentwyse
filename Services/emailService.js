@@ -43,7 +43,7 @@ class EmailService {
   }
 
   async sendVerificationEmail(userEmail, verificationToken) {
-    const verificationUrl = `http://localhost:5500/api/user/verify-email?token=${verificationToken}`;
+    const verificationUrl = ` https://rent-wyse-726bbcf52f8c.herokuapp.com/api/user/verify-email?token=${verificationToken}`;
 
     try {
       const mailOptions = {
