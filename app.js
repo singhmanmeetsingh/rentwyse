@@ -64,5 +64,9 @@ app.use("/api/kyc", kycRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/conversations", conversationRoutes);
 
+app.get("/", (req, res) => {
+  res.send("welcome to rent-wyse");
+});
+
 // Exporting this app file
 module.exports = app;
