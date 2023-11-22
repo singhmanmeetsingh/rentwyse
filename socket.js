@@ -9,7 +9,7 @@ module.exports = {
   init: (httpServer) => {
     io = new Server(httpServer, {
       cors: {
-        origin: "http://localhost:4200",
+        origin: "https://rentwise-client-75315342fb4d.herokuapp.com",
         methods: ["GET", "POST"],
         allowedHeaders: ["my-custom-header"],
         credentials: true,
