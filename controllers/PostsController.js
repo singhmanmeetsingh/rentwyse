@@ -67,34 +67,64 @@ exports.newPost = (req, res, next) => {
 };
 
 exports.listPost = (req, res, next) => {
-  console.log(req.query); // to see the query parameter in the requests
   const pageSize = +req.query.pagesize;
-  const currentPage = +req.query.page; // we need to convert this to a numeric value as it comes as a string from the req so we add a + in front
-  const postQuery = Post.find(); // when doing this the function is not called until you use the .then at the back of it so thats why we can do this here !!
+  const currentPage = +req.query.page;
+  const postQuery = Post.find();
+
+  // Constructing the filter query
+  const filterQuery = {};
+  if (req.query.city) {
+    filterQuery.city = { $regex: new RegExp(req.query.city, 'i') };
+  }
+  if (req.query.bedroom) {
+    filterQuery.bedroom = req.query.bedroom;
+  }
+  if (req.query.bathroom) {
+    filterQuery.bathroom = req.query.bathroom;
+  }
+  if (req.query.furnished) {
+    filterQuery.furnished = req.query.furnished === 'true';
+  }
+  if (req.query.parkingAvailable) {
+    filterQuery.parkingAvailable = req.query.parkingAvailable === 'true';
+  }
+  if (req.query.minPrice || req.query.maxPrice) {
+    filterQuery.price = {};
+    if (req.query.minPrice) {
+      filterQuery.price.$gte = parseInt(req.query.minPrice);
+    }
+    if (req.query.maxPrice) {
+      filterQuery.price.$lte = parseInt(req.query.maxPrice);
+    }
+  }
+
+  console.log(filterQuery)
+
+  // Apply filters to the query
+  postQuery.find(filterQuery);
+
   let fetchedPost;
   if (pageSize && currentPage) {
-    // this is for pagination
-    postQuery
-      .skip(pageSize * (currentPage - 1)) // as the name suggests we are using skip to skip through the pages we dont want to see
-      .limit(pageSize); // we use this to limit the amount of data being sent back
+    postQuery.skip(pageSize * (currentPage - 1)).limit(pageSize);
   }
+
   postQuery
     .then((documents) => {
       fetchedPost = documents;
-      return Post.count();
+      return Post.countDocuments(filterQuery); // Count the filtered documents
     })
     .then((count) => {
-      console.log(fetchedPost);
       res.status(200).json({
-        message: "Post fetched successfully!",
+        message: "Posts fetched successfully!",
         posts: fetchedPost,
         maxPost: count,
       });
     })
     .catch((error) => {
-      res.status(500).json({ message: "Fetching posts failed !!" });
+      res.status(500).json({ message: "Fetching posts failed!!", error: error.message });
     });
 };
+
 
 exports.listPostByUserId = (req, res, next) => {
   const userId = req.userData.userId; // Get user ID from request data
