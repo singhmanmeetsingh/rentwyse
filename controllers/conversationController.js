@@ -3,7 +3,47 @@ const Message = require("../models/message");
 const Post = require("../models/post");
 const fs = require("fs");
 const path = require("path");
+const socket = require("../socket");
+const User = require("../models/user");
 
+//importing paypal client
+
+// const { paypalClient } = require("../config/papalConfig");
+
+// const checkoutNodeJssdk = require("@paypal/checkout-server-sdk");
+
+// async function createPayPalTransaction(conversationId) {
+//   const client = paypalClient();
+//   const request = new checkoutNodeJssdk.orders.OrdersCreateRequest();
+//   request.prefer("return=representation");
+//   console.log('we in the func create paypal transaction')
+//   const conversation = await Conversation.findById(conversationId);
+//   if (!conversation) {
+//     throw new Error("Conversation not found");
+//   }
+
+//   request.requestBody({
+//     intent: "CAPTURE",
+//     purchase_units: [
+//       {
+//         amount: {
+//           currency_code: "CAD",
+//           value: '50',
+//         },
+//       },
+//     ],
+//   });
+
+//   try {
+//     const response = await client.execute(request);
+//     return response.result;
+//   } catch (err) {
+//     console.error(err);
+//     throw err;
+//   }
+// }
+
+//create
 exports.startOrGetConversation = async (req, res) => {
   try {
     const { userId } = req.userData; // Sender, authenticated user
@@ -33,6 +73,7 @@ exports.startOrGetConversation = async (req, res) => {
   }
 };
 
+//Read
 exports.getConversationMessages = async (req, res) => {
   console.log("getConversationMessages hit");
   try {
@@ -50,6 +91,7 @@ exports.getConversationMessages = async (req, res) => {
   }
 };
 
+//Read
 exports.getAllConversationsForUser = async (req, res) => {
   try {
     const userId = req.params.userId;
@@ -95,6 +137,7 @@ exports.getAllConversationsForUser = async (req, res) => {
   }
 };
 
+//Update
 exports.setViewingDate = async (req, res) => {
   const { viewingDate } = req.body;
   const conversationId = req.params.conversationId;
@@ -122,6 +165,17 @@ exports.setViewingDate = async (req, res) => {
     conversation.viewingDate = viewingDate;
     await conversation.save();
 
+    // Emitting an event to notify the other participant
+    const otherParticipantId = conversation.participants.find(
+      (p) => p.toString() !== req.userData.userId
+    );
+    emitNotificationToUser(
+      req.userData.userId,
+      otherParticipantId,
+      conversation._id,
+      `Viewing date set for ${viewingDate}`
+    );
+
     res.status(200).json({
       message: "Viewing date set successfully",
       viewingDate: conversation.viewingDate,
@@ -135,10 +189,36 @@ exports.setViewingDate = async (req, res) => {
   }
 };
 
+async function emitNotificationToUser(
+  senderId,
+  receiverId,
+  conversationId,
+  message
+) {
+  try {
+    const sender = await User.findById(senderId);
+    const senderUsername = sender ? sender.username : "Unknown";
+    console.log(senderId, receiverId, conversationId, message, senderUsername);
+    const userSocketId = socket.getUserSockets()[receiverId];
+    if (userSocketId) {
+      socket.getIO().to(userSocketId).emit("newMessage", {
+        conversationId: conversationId,
+        message: message,
+        sender: senderId,
+        receiver: receiverId,
+        senderUsername: senderUsername,
+      });
+    }
+  } catch (err) {
+    console.error("Error in emitNotificationToUser:", err);
+  }
+}
+
 //Document Upload
 exports.uploadAgreementDocument = async (req, res) => {
   const conversationId = req.params.conversationId;
   const documents = req.files; // This will be an array of files
+  let document;
 
   try {
     const conversation = await Conversation.findById(conversationId).populate(
@@ -157,14 +237,27 @@ exports.uploadAgreementDocument = async (req, res) => {
       if (req.userData.userId === conversation.postId.creator.toString()) {
         // Post creator is uploading the agreement document
         conversation.agreementDocuments.push(filename);
+        document = "Agreement Document";
       } else {
         // Other participant is uploading the signed agreement document
         conversation.signedAgreementDocuments.push(filename);
         conversation.agreementSigned = true; // Mark as signed
+        document = "Signed Agreement Document";
       }
     });
 
     await conversation.save();
+
+    // After uploading document, emit a notification
+    const otherParticipantId = conversation.participants.find(
+      (p) => p.toString() !== req.userData.userId
+    );
+    await emitNotificationToUser(
+      req.userData.userId,
+      otherParticipantId,
+      conversation._id,
+      `${document} uploaded`
+    );
 
     res.status(200).json({
       message: "Document uploaded successfully",
@@ -189,6 +282,7 @@ exports.viewDocument = (req, res) => {
   }
 };
 
+//Delete
 exports.deleteDocument = async (req, res) => {
   const { conversationId, filename } = req.params;
   try {
@@ -223,3 +317,102 @@ exports.deleteDocument = async (req, res) => {
     res.status(500).json({ message: "Failed to delete document", error });
   }
 };
+
+//payment
+
+// // Endpoint to calculate and update invoice details
+// exports.calculateAndUpdateInvoice = async (req, res) => {
+//   const { conversationId, renegotiatedPrice, province } = req.body;
+
+//   try {
+//     const conversation = await Conversation.findById(conversationId);
+//     if (!conversation) {
+//       return res.status(404).json({ message: "Conversation not found" });
+//     }
+
+//     const salesTaxRate = getSalesTaxRate(province);
+//     const serviceCharge = renegotiatedPrice * 0.1; // 10% service charge
+//     const salesTax = renegotiatedPrice * salesTaxRate;
+//     const totalAmount = renegotiatedPrice + serviceCharge + salesTax;
+
+//     conversation.renegotiatedPrice = renegotiatedPrice;
+//     conversation.salesTax = salesTax;
+//     conversation.serviceCharge = serviceCharge;
+//     conversation.totalAmount = totalAmount;
+//     await conversation.save();
+
+//     res.status(200).json({
+//       message: "Invoice updated successfully",
+//       invoiceDetails: {
+//         renegotiatedPrice,
+//         salesTax,
+//         serviceCharge,
+//         totalAmount,
+//       },
+//     });
+//   } catch (error) {
+//     res.status(500).json({ message: "Failed to calculate invoice", error });
+//   }
+// };
+
+// // Function to return sales tax rate based on Canadian province
+// function getSalesTaxRate(province) {
+//   // Defining sales tax rates for each province
+//   const taxRates = {
+//     Alberta: 0.05, // GST
+//     "British Columbia": 0.12, // GST + PST
+//     Manitoba: 0.12, // GST + PST
+//     "New Brunswick": 0.15, // HST
+//     "Newfoundland and Labrador": 0.15, // HST
+//     "Northwest Territories": 0.05, // GST
+//     "Nova Scotia": 0.15, // HST
+//     Nunavut: 0.05, // GST
+//     Ontario: 0.13, // HST
+//     "Prince Edward Island": 0.15, // HST
+//     Quebec: 0.14975, // GST + QST
+//     Saskatchewan: 0.11, // GST + PST
+//     Yukon: 0.05, // GST
+//   };
+
+//   return taxRates[province] || 0; // Default to 0 if province not found
+// }
+
+// // endpoint in your controller to initiate a PayPal transaction
+
+// exports.createPayPalTransaction = async (req, res) => {
+//   const { conversationId } = req.body;
+//   console.log("we in create paypal payment");
+//   try {
+//     const transaction = await createPayPalTransaction(conversationId);
+//     res.status(200).json({
+//       message: "PayPal transaction created successfully",
+//       approvalUrl: transaction.links.find((link) => link.rel === "approve")
+//         .href,
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     res.status(500).json({
+//       message: "Failed to create PayPal transaction",
+//       error: error.toString(),
+//     });
+//   }
+// };
+
+// exports.updatePaymentStatus = async (req, res) => {
+//   const { conversationId } = req.body;
+
+//   try {
+//     const conversation = await Conversation.findById(conversationId);
+//     if (!conversation) {
+//       return res.status(404).json({ message: "Conversation not found" });
+//     }
+
+//     // Update payment status to true
+//     conversation.paymentStatus = true;
+//     await conversation.save();
+
+//     res.status(200).json({ message: "Payment status updated successfully" });
+//   } catch (error) {
+//     res.status(500).json({ message: "Failed to update payment status", error });
+//   }
+// };

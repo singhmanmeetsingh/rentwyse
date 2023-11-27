@@ -3,9 +3,8 @@ const Conversation = require("../models/conversation");
 const User = require("../models/user");
 const socket = require("../socket");
 
-// Add other required models
-// messageController.js
 
+//Create
 exports.createMessage = async (req, res) => {
   try {
     const { conversationId, receiver, content } = req.body;
@@ -85,6 +84,7 @@ exports.createMessage = async (req, res) => {
   }
 };
 
+//Read
 exports.getMessagesForUser = async (req, res) => {
   // Implement logic to get all messages for a user
 };
@@ -114,6 +114,7 @@ exports.readMessagesInConversation = async (req, res) => {
   }
 };
 
+//Read
 exports.getUnreadMessagesCount = async (req, res) => {
   try {
     const userId = req.userData.userId;

@@ -1,6 +1,8 @@
 const Post = require("../models/post");
 const mongoose = require("mongoose");
 
+
+//create
 exports.newPost = (req, res, next) => {
   // We already imported the multer middle-ware in the route
   const url = req.protocol + "://" + req.get("host");
@@ -66,6 +68,7 @@ exports.newPost = (req, res, next) => {
     });
 };
 
+//Read
 exports.listPost = (req, res, next) => {
   const pageSize = +req.query.pagesize;
   const currentPage = +req.query.page;
@@ -74,7 +77,7 @@ exports.listPost = (req, res, next) => {
   // Constructing the filter query
   const filterQuery = {};
   if (req.query.city) {
-    filterQuery.city = { $regex: new RegExp(req.query.city, 'i') };
+    filterQuery.city = { $regex: new RegExp(req.query.city, "i") };
   }
   if (req.query.bedroom) {
     filterQuery.bedroom = req.query.bedroom;
@@ -83,10 +86,10 @@ exports.listPost = (req, res, next) => {
     filterQuery.bathroom = req.query.bathroom;
   }
   if (req.query.furnished) {
-    filterQuery.furnished = req.query.furnished === 'true';
+    filterQuery.furnished = req.query.furnished === "true";
   }
   if (req.query.parkingAvailable) {
-    filterQuery.parkingAvailable = req.query.parkingAvailable === 'true';
+    filterQuery.parkingAvailable = req.query.parkingAvailable === "true";
   }
   if (req.query.minPrice || req.query.maxPrice) {
     filterQuery.price = {};
@@ -98,7 +101,7 @@ exports.listPost = (req, res, next) => {
     }
   }
 
-  console.log(filterQuery)
+  console.log(filterQuery);
 
   // Apply filters to the query
   postQuery.find(filterQuery);
@@ -121,11 +124,13 @@ exports.listPost = (req, res, next) => {
       });
     })
     .catch((error) => {
-      res.status(500).json({ message: "Fetching posts failed!!", error: error.message });
+      res
+        .status(500)
+        .json({ message: "Fetching posts failed!!", error: error.message });
     });
 };
 
-
+//Read
 exports.listPostByUserId = (req, res, next) => {
   const userId = req.userData.userId; // Get user ID from request data
   const pageSize = +req.query.pagesize;
@@ -162,6 +167,7 @@ exports.listPostByUserId = (req, res, next) => {
     });
 };
 
+//Read
 exports.listPostById = (req, res, next) => {
   Post.findById(req.params.id)
     .then((post) => {
@@ -178,6 +184,7 @@ exports.listPostById = (req, res, next) => {
     });
 };
 
+//Update
 exports.editPost = (req, res, next) => {
   const postId = req.params.id;
   let imagePath = req.body.imagePath;
@@ -232,6 +239,7 @@ exports.editPost = (req, res, next) => {
     });
 };
 
+//Delete
 exports.deletePost = (req, res, next) => {
   console.log(req.params._id);
   Post.deleteOne({ _id: req.params._id, creator: req.userData.userId })
@@ -240,7 +248,9 @@ exports.deletePost = (req, res, next) => {
       if (result.deletedCount > 0) {
         res.status(200).json({ message: "Delete Successful!" });
       } else {
-        res.status(401).json({ message: "Not Authorized!" });
+        res
+          .status(404)
+          .json({ message: "Post not found or user not authorized to delete" });
       }
     })
     .catch((error) => {
@@ -249,25 +259,27 @@ exports.deletePost = (req, res, next) => {
     });
 };
 
-exports.listPostSearch = async(req, res, next) => {
+//Search
+exports.listPostSearch = async (req, res, next) => {
   try {
-    const { city, bedroom, bathroom, furnished, parkingAvailable, price } = req.query;
+    const { city, bedroom, bathroom, furnished, parkingAvailable, price } =
+      req.query;
 
-     const query = {};
+    const query = {};
 
-     // if (city) query.city = city;
-     //below code is for the search string case-insensitive
-    if (city) query.city = { $regex: new RegExp(city, 'i') };
+    // if (city) query.city = city;
+    //below code is for the search string case-insensitive
+    if (city) query.city = { $regex: new RegExp(city, "i") };
     if (bedroom) query.bedroom = bedroom;
     if (bathroom) query.bathroom = bathroom;
-    if (furnished) query.furnished = furnished === 'true';
-    if (parkingAvailable) query.parkingAvailable = parkingAvailable === 'true';
+    if (furnished) query.furnished = furnished === "true";
+    if (parkingAvailable) query.parkingAvailable = parkingAvailable === "true";
     if (price) query.price = { $lte: parseInt(price) };
 
-    const results = await  Post.find(query);
+    const results = await Post.find(query);
     res.status(200).json(results);
-  }catch (error) {
+  } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: "Internal Server Error" });
   }
-}
+};

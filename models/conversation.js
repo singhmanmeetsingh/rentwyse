@@ -34,6 +34,16 @@ const conversationSchema = mongoose.Schema({
       required: false,
     },
   ],
+  salesTax: { type: Number, required: false },
+  serviceCharge: { type: Number, required: false },
+  totalAmount: { type: Number, required: false },
+  paymentStatus: { type: Boolean, default: false },
+  receipt: {
+      renegotiatedPrice: Number,
+      serviceCharge: Number,
+      salesTax: Number,
+      totalAmount: Number
+  }
 });
 
 module.exports = mongoose.model("Conversation", conversationSchema);

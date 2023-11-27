@@ -22,7 +22,7 @@ router.post(
   ConversationController.setViewingDate
 );
 
-//route to upload agreement documents 
+//route to upload agreement documents
 router.post(
   "/:conversationId/upload-document",
   checkAuth,
@@ -30,14 +30,40 @@ router.post(
   ConversationController.uploadAgreementDocument
 );
 
-
 // View Document
-router.get('/documents/:filename', checkAuth, ConversationController.viewDocument);
-
+router.get(
+  "/documents/:filename",
+  checkAuth,
+  ConversationController.viewDocument
+);
 
 // Delete Document
-router.delete('/:conversationId/delete-document/:filename', checkAuth, ConversationController.deleteDocument);
+router.delete(
+  "/:conversationId/delete-document/:filename",
+  checkAuth,
+  ConversationController.deleteDocument
+);
 
+// //payment
+// // Route to calculate and update invoice
+// router.post(
+//   "/:conversationId/calculate-invoice",
+//   checkAuth,
+//   ConversationController.calculateAndUpdateInvoice
+// );
 
+// // Route to create a PayPal transaction
+// router.post(
+//   "/create-paypal-transaction",
+//   checkAuth,
+//   ConversationController.createPayPalTransaction
+// );
+
+// // Route to update payment status
+// router.patch(
+//   "/:conversationId/update-payment-status",
+//   checkAuth,
+//   ConversationController.updatePaymentStatus
+// );
 
 module.exports = router;
