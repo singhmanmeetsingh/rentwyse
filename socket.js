@@ -3,7 +3,7 @@ const { Server } = require("socket.io");
 
 let io;
 let userSockets = {}; // This will map user IDs to their socket IDs
-let queuedMessages = {}; // Maps user IDs to arrays of messages that are queued
+let queuedMessages = {}; // Maps user IDs to arrays of messages that are queued.
 
 module.exports = {
   init: (httpServer) => {
